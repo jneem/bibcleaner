@@ -5,7 +5,7 @@ import org.parboiled.scala._
 class BibtexParser extends Parser {
   // keep("a") makes a rule that matches a and pushes it onto the value stack.
   def keep(r: Rule0): Rule1[String] = r ~> identity
-
+  
   /**
    * Creates a rule to match a delimited string.
    *
@@ -78,8 +78,18 @@ class BibtexParser extends Parser {
   def entry: Rule1[BibtexEntry] = rule {
     "@" ~ keep(name) ~ WS ~ "{" ~ WS ~ key ~ comma ~ nameValueList ~ "}" ~ WS ~~> BibtexEntry
   }
+  
+  def endline: Rule0 = zeroOrMore(noneOf("\n\r")) ~ oneOrMore(anyOf("\n\r"))
+  def comment: Rule0 = rule {
+    // A comment is either a line that starts with @comment (case insensitive)
+    ("@" ~ name ~? (_.toLowerCase == "comment") ~ endline
+    // or a line that starts with something other than @
+        | !"@" ~ endline)
+  }
 
   def file: Rule1[List[BibtexEntry]] = rule {
-    oneOrMore(entry)
+    def subFile: Rule1[List[Option[BibtexEntry]]] =
+      zeroOrMore(comment ~> (_ => None) | entry ~~> (Some(_)))
+    subFile ~~> (_.flatten)
   }
 }

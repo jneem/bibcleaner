@@ -3,6 +3,7 @@ package bibtex
 import collection.mutable
 import scala.Predef.Set.apply
 import scala.collection.immutable.List.apply
+import org.parboiled.scala._
 
 case class Name(first: String, von: String, last: String, jr: String) {
   // TODO: handle middle initial: "Peter L" -> "P. L."
@@ -70,10 +71,11 @@ object Canonicalizer {
     val root = xml.XML.loadFile(fn)
     val ap = new AuthorParser
     val ret = new Canonicalizer
+    val run = ReportingParseRunner(ap.name)
     (root \ "author").foreach(p => {
       val name = (p \ "name").head.text
       // TODO: better error handling
-      ret += ap.authorName(new util.parsing.input.CharSequenceReader(name)).get
+      ret += run.run(name).result.get
     })
 
     ret
@@ -84,9 +86,10 @@ object Canonicalizer {
     val root = xml.XML.loadFile(fn)
     val ap = new AuthorParser
     val mapping: Iterable[(Name, String)] = (root \ "author").map(p => {
+    val run = ReportingParseRunner(ap.name)
       val nameStr = (p \ "name").head.text
       // TODO: better error handling
-      val name: Name = ap.authorName(new util.parsing.input.CharSequenceReader(nameStr)).get
+      val name: Name = run.run(nameStr).result.get
       (name, (p \ "url").head.text)
     })
 

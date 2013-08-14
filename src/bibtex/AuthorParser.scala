@@ -4,7 +4,7 @@ import scala.collection.Seq
 import scala.collection.mutable.Map
 import org.parboiled.scala._
 
-abstract class Case
+sealed trait Case
 case class Upper extends Case
 case class Lower extends Case
 case class Uncased extends Case
@@ -31,8 +31,12 @@ class Word(chars: List[PseudoChar]) {
   def toPlainString: String = toString.filterNot("{}\\".contains(_))
 }
 
-class ParboiledAuthorParser extends EntryParser {
-  private val whitespaceChars = " \t\n\u000B\f\r"
+class AuthorParser extends EntryParser {
+  // Note that bibtex treats a tilde as white-space for the purposes
+  // of separating names.
+  // TODO: hyphens should be also treated as whitespace for the purposes
+  // of separating names, but they shouldn't be discarded.
+  private val whitespaceChars = " \t\n\u000B\f\r~"
   def ws: Rule0 = zeroOrMore(anyOf(whitespaceChars))
   
   // A word is a sequence of pseudochars. The word "and" is reserved, so we don't match it.

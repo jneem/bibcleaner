@@ -8,7 +8,8 @@ import scala.Predef.Map.apply
 // along with some methods to help in sanitizing the values.
 case class BibtexEntry(entryType: String, key: String, initProps: Iterable[(String, String)])
   extends mutable.HashMap[String,String] {
-  this ++= initProps
+  // Make the keys all lowercase, since the keys are case insensitive.
+  this ++= initProps map (x => (x._1.toLowerCase, x._2))
 
   // TODO: figure out a better interface
   var canon : Option[Canonicalizer] = None

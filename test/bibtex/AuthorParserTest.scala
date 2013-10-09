@@ -1,13 +1,15 @@
 package bibtex
 
-import org.scalatest.verb.BehaveWord
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.parboiled.scala.testing.ParboiledTest
 import org.parboiled.scala.ReportingParseRunner
 import org.parboiled.scala.Rule1
 import org.scalatest.FlatSpec
-import org.scalatest.events.Formatter
 import scala.collection.immutable.Map
+import org.parboiled.scala.string2Input
 
+@RunWith(classOf[JUnitRunner])
 class AuthorParserBasicTest extends ParboiledTest with FlatSpec {
   val p = new AuthorParser()
   type Result = Word

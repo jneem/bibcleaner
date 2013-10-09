@@ -27,10 +27,10 @@ case class BibtexEntry(entryType: String, key: String, initProps: Iterable[(Stri
     }
   }
 
-  def authors: List[String] = {
-    /*val ap = new AuthorParser
-    val reader = new util.parsing.input.CharSequenceReader(this("author"))
-    val names = ap.authorNameList(reader).get
+  def authors(): List[Name] = AuthorParser.parse(io.Source.fromString(this("author")))
+  
+  def htmlAuthors(): List[String] = {
+    val names = authors()
     def makeCanon(n: Name) = canon match {
       case Some(c) => c(n)
       case None => n
@@ -46,8 +46,6 @@ case class BibtexEntry(entryType: String, key: String, initProps: Iterable[(Stri
     // println(names)
     // filter myself out of the list of names
     names.filter(_ != Name("Joe", "", "Neeman", "")).map(makeCanon).map(htmlName)
-    */
-    List()
   }
 
   def year: String = this("year")
@@ -60,7 +58,7 @@ case class BibtexEntry(entryType: String, key: String, initProps: Iterable[(Stri
     val titleTd = ("""<td><a class="bibtitle" href="%s">%s</a>""".format(link, title)
         + """<br><span class="bibjournal"> %s, %s</span></td>""".format(journal, year))
 
-    val authorsTd = """<td class="bibauthor">%s</td>""".format(authors.mkString("<br>"))
+    val authorsTd = """<td class="bibauthor">%s</td>""".format(htmlAuthors().mkString("<br>"))
 
     """<tr class="%s">""".format(id) + titleTd + authorsTd + "</tr>"
   }

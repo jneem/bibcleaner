@@ -113,3 +113,11 @@ class AuthorParser extends EntryParser {
     (maybeName ~ zeroOrMore(and ~ maybeName)) ~~> ((x, y) => (x::y).flatten)
   }
 }
+
+object AuthorParser {
+  def parse(input: io.Source): List[Name] = {
+    val parser = new AuthorParser
+    val runner = ReportingParseRunner(parser.nameList)
+    runner.run(input).result.get
+  }
+}

@@ -5,15 +5,15 @@ import org.parboiled.scala._
 class BibtexParser extends Parser {
   // keep("a") makes a rule that matches a and pushes it onto the value stack.
   def keep(r: Rule0): Rule1[String] = r ~> identity
-  
+
   /**
    * Creates a rule to match a delimited string.
    *
    * This will match strings which start with `leftDelim`, then contain some
    * characters matching `char`, and terminate with `rightDelim`.
    */
-  def delimitedString(leftDelim: String, char: => Rule0, rightDelim: String): Rule0 = {
-    leftDelim ~ zeroOrMore(char) ~ rightDelim
+  def delimitedString(leftDelim: String, char: => Rule0, rightDelim: String): Rule1[String] = {
+    leftDelim ~ keep(zeroOrMore(char)) ~ rightDelim
   }
 
   /**
@@ -23,26 +23,36 @@ class BibtexParser extends Parser {
   def delimitedString(leftDelim: String,
     forbiddenChars: String,
     subString: => Rule0,
-    rightDelim: String): Rule0 = {
+    rightDelim: String): Rule1[String] = {
     delimitedString(leftDelim, (oneOrMore(noneOf(forbiddenChars)) | subString), rightDelim)
   }
 
   /**
    * A braced string may contain arbitrarily nested braced strings, but cannot contain `@`.
    */
-  def bracedString: Rule0 = rule { delimitedString("{", "{}@", bracedString, "}") }
+  def bracedString: Rule1[String] = rule { delimitedString("{", "{}@", bracedString0, "}") }
+  
+  /**
+   * The same as braced string, but without pushing a value.
+   */
+  def bracedString0: Rule0 = bracedString ~~% (_ => ())
 
   /**
    * This is a nested braced string that may contain `@`. It does not appear by itself in bibtex,
    * but it appears as a substring of a quoted string.
    */
-  def bracedAtString: Rule0 = rule { delimitedString("{", "{}", bracedAtString, "}") }
+  def bracedAtString: Rule1[String] = rule { delimitedString("{", "{}", bracedAtString0, "}") }
+  
+  /**
+   * The same as bracedAtString, but without pushing a value.
+   */
+  def bracedAtString0: Rule0 = bracedAtString ~~% (_ => ())
 
   /**
    * A quoted string may contain nested braced strings (with `@`) but may not contain
    * nested quoted strings.
    */
-  def quotedString: Rule0 = rule { delimitedString("\"", "\"{}", bracedAtString, "\"") }
+  def quotedString: Rule1[String] = rule { delimitedString("\"", "\"{}", bracedAtString0, "\"") }
 
   /**
    * Matches a legal name for either a block or an entry.
@@ -54,7 +64,7 @@ class BibtexParser extends Parser {
   /**
    * Matches the right hand side of a "name = value" pair.
    */
-  def value: Rule0 = rule { quotedString | bracedString | number }
+  def value: Rule1[String] = rule { quotedString | bracedString | keep(number) }
 
   def WS: Rule0 = rule { zeroOrMore(anyOf(" \n\r\t\f")) }
 
@@ -64,7 +74,7 @@ class BibtexParser extends Parser {
    * Matches a "name = value" pair.
    */
   def nameValue: Rule1[(String, String)] = rule {
-    (keep(name) ~ WS ~ "=" ~ WS ~ keep(value) ~ WS) ~~> (_ -> _)
+    (keep(name) ~ WS ~ "=" ~ WS ~ value ~ WS) ~~> (_ -> _)
   }
 
   def nameValueList: Rule1[List[(String, String)]] = rule {
@@ -78,18 +88,31 @@ class BibtexParser extends Parser {
   def entry: Rule1[BibtexEntry] = rule {
     "@" ~ keep(name) ~ WS ~ "{" ~ WS ~ key ~ comma ~ nameValueList ~ "}" ~ WS ~~> BibtexEntry
   }
-  
+
   def endline: Rule0 = zeroOrMore(noneOf("\n\r")) ~ oneOrMore(anyOf("\n\r"))
   def comment: Rule0 = rule {
     // A comment is either a line that starts with @comment (case insensitive)
     ("@" ~ name ~? (_.toLowerCase == "comment") ~ endline
-    // or a line that starts with something other than @
-        | !"@" ~ endline)
+      // or a line that starts with something other than @
+      | !"@" ~ endline)
   }
 
   def file: Rule1[List[BibtexEntry]] = rule {
     def subFile: Rule1[List[Option[BibtexEntry]]] =
       zeroOrMore(comment ~> (_ => None) | entry ~~> (Some(_)))
     subFile ~~> (_.flatten)
+  }
+}
+
+object BibtexParser {
+  /**
+   * Reads a list of BibtexEntries from a file.
+   *
+   * This does no error handling.
+   */
+  def parse(input: scala.io.Source): List[BibtexEntry] = {
+    val parser = new BibtexParser
+    val runner = ReportingParseRunner(parser.file)
+    runner.run(input).result.get
   }
 }

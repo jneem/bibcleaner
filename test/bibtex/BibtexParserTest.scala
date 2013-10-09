@@ -1,13 +1,13 @@
 package bibtex
 
-import org.scalatest.verb.BehaveWord
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.parboiled.scala.testing.ParboiledTest
 import org.parboiled.scala.ReportingParseRunner
-import org.parboiled.scala.TracingParseRunner
 import org.scalatest.FlatSpec
-import org.scalatest.events.Formatter
-import scala.collection.immutable.Map
+import org.parboiled.scala.string2Input
 
+@RunWith(classOf[JUnitRunner])
 class BibtexParserBasicTest extends ParboiledTest with FlatSpec {
   val p = new BibtexParser()
   type Result = String
@@ -15,28 +15,28 @@ class BibtexParserBasicTest extends ParboiledTest with FlatSpec {
   behavior of "BibtexParser's delimited string parsers"
   
   it should "parse simple braced strings" in {
-    parse(ReportingParseRunner(p.keep(p.bracedString)), "{test}") {
-      assert(parsingResult.result == Some("{test}"))
+    parse(ReportingParseRunner(p.bracedString), "{test}") {
+      assert(parsingResult.result === Some("test"))
     }
   }
   
   it should "parse nested braced strings" in {
-    parse(ReportingParseRunner(p.keep(p.bracedString)), "{{}a{a{}}}") {
-      assert(parsingResult.result == Some("{{}a{a{}}}"))
+    parse(ReportingParseRunner(p.bracedString), "{{}a{a{}}}") {
+      assert(parsingResult.result === Some("{}a{a{}}"))
     }
   }
   
   it should "fail on @ inside a braced string" in {
-    failParse(ReportingParseRunner(p.keep(p.bracedString)), "{test@test}") {
-      assert(parsingResult.parseErrors(0).getStartIndex() == 5)
+    failParse(ReportingParseRunner(p.bracedString), "{test@test}") {
+      assert(parsingResult.parseErrors(0).getStartIndex() === 5)
     }
   }
   
   behavior of "BibtexParser's value parser"
   
   it should "parse braced strings" in {
-    parse(ReportingParseRunner(p.keep(p.value)), "{Chan, Siu On and Mossel, Elchanan}") {
-      assert(parsingResult.result === Some("{Chan, Siu On and Mossel, Elchanan}"))
+    parse(ReportingParseRunner(p.value), "{Chan, Siu On and Mossel, Elchanan}") {
+      assert(parsingResult.result === Some("Chan, Siu On and Mossel, Elchanan"))
     }
   }
 }

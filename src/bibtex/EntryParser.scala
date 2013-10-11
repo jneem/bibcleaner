@@ -100,11 +100,22 @@ class EntryParser extends Parser {
   }
 
   // A pseudo-character is either
-  // - a single character which is not a brace, comma, or whitespace
+  // - a single character which is not a brace (or another forbidden char)
   // - a balanced brace expression.
-  def pseudoChar: Rule1[PseudoChar] = rule {
-    val whitespaceChars = " \t\n\u000B\f\r"
-    val normalChar: Rule1[String] = keep(noneOf(whitespaceChars + ",{}"))
+  // TODO: maybe tex commands and escapes should be included also?
+  def pseudoChar(forbiddenChars: String): Rule1[PseudoChar] = rule {
+    val normalChar: Rule1[String] = keep(noneOf(forbiddenChars + "{}"))
     toplevelBracedString | normalChar ~~> (PseudoChar(_))
+  }
+  
+  
+  def entry: Rule1[List[PseudoChar]] = zeroOrMore(pseudoChar(""))
+}
+
+object EntryParser {
+  def parse(input: io.Source): List[PseudoChar] = {
+    val parser = new EntryParser
+    val runner = ReportingParseRunner(parser.entry)
+    runner.run(input).result.get
   }
 }

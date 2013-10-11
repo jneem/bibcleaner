@@ -1,66 +1,41 @@
 package bibtex
 
-import collection.mutable
-import Name.apply
-import scala.Predef.Map.apply
-
 // A BibtexEntry is essentially a collection of name/value pairs,
 // along with some methods to help in sanitizing the values.
-case class BibtexEntry(entryType: String, key: String, initProps: Iterable[(String, String)])
-  extends mutable.HashMap[String,String] {
-  // Make the keys all lowercase, since the keys are case insensitive.
-  this ++= initProps map (x => (x._1.toLowerCase, x._2))
-
-  // TODO: figure out a better interface
-  var canon : Option[Canonicalizer] = None
-  var urlResolver : Map[Name, String] = Map()
-
-  def title: String = if (contains("title")) this("title") else ""
-  def link: String = {
-    if (contains("url")) this("url")
-    else if (contains("archivePrefix")
-             && this("archivePrefix") == "arXiv"
-             && contains("eprint")) {
-      "http://arxiv.org/abs/" + this("eprint")
-    } else {
-      ""
-    }
-  }
-
-  def authors(): List[Name] = AuthorParser.parse(io.Source.fromString(this("author")))
-  
-  def htmlAuthors(): List[String] = {
-    val names = authors()
-    def makeCanon(n: Name) = canon match {
-      case Some(c) => c(n)
-      case None => n
-    }
-    def htmlName(n: Name) = {
-      val nameStr = n.short.replaceAll(" ", "&nbsp;")
-      if (urlResolver.contains(n)) {
-        """<a href="%s">%s</a>""".format(urlResolver(n), nameStr)
-      } else {
-        nameStr
+trait BibtexEntry extends Map[String, String] {
+  /**
+   * The title field.
+   * 
+   * The title will be returned in a format suitable for displaying in plain text.
+   * All braces will be removed, and all words except the first will be
+   * turned to lower case (except for words protected by braces).
+   */
+  def title: String = get("title") match {
+    case Some(t) => {
+      val parsedTitle = EntryParser.parse(io.Source.fromString(t))
+      // Turn pseudochars to strings by stripping any braces and backslashes.
+      // For pseudochars that are not braced, we also turn all characters to
+      // lower case.
+      def pcToString(pc: PseudoChar) = {
+        val ret = pc.toString.replaceAll("[{}\\\\]", "")
+        if (pc.braced) ret else ret.toLowerCase()
       }
-    }
-    // println(names)
-    // filter myself out of the list of names
-    names.filter(_ != Name("Joe", "", "Neeman", "")).map(makeCanon).map(htmlName)
-  }
 
-  def year: String = this("year")
+      (parsedTitle map pcToString).mkString.capitalize
+    }
+    case None => ""
+  }
 
   // TODO: canonicalize journals also
-  def journal: String = getOrElse("journal", getOrElse("note", ""))
+  def journal: String = getOrElse("journal", "")
 
-  // Writes out this bibtex element as a table row.
-  def toHtml(id: String): String = {
-    val titleTd = ("""<td><a class="bibtitle" href="%s">%s</a>""".format(link, title)
-        + """<br><span class="bibjournal"> %s, %s</span></td>""".format(journal, year))
+  def authors: List[Name] = get("author") match {
+    case Some(a) => AuthorParser.parse(io.Source.fromString(a))
+    case None => List()
+  }
 
-    val authorsTd = """<td class="bibauthor">%s</td>""".format(htmlAuthors().mkString("<br>"))
-
-    """<tr class="%s">""".format(id) + titleTd + authorsTd + "</tr>"
+  def year: Int = get("year") match {
+    case Some(y) => try y.toInt catch { case (ex: NumberFormatException) => 0 }
+    case None => 0
   }
 }
-

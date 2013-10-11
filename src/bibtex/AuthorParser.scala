@@ -39,8 +39,8 @@ class AuthorParser extends EntryParser {
   private val whitespaceChars = " \t\n\u000B\f\r~"
   def ws: Rule0 = zeroOrMore(anyOf(whitespaceChars))
   
-  // A word is a sequence of pseudochars. The word "and" is reserved, so we don't match it.
-  def word: Rule1[Word] = (oneOrMore(pseudoChar) ~ ws) ~~> (new Word(_)) 
+  // A word is a sequence of pseudochars, with commas forbidden. The word "and" is reserved, so we don't match it.
+  def word: Rule1[Word] = (oneOrMore(pseudoChar("," + whitespaceChars)) ~? (_ != "and") ~ ws) ~~> (new Word(_)) 
   
   def wordsToName(ws: List[Word]): String = ws.map(_.toPlainString).mkString(" ")
   

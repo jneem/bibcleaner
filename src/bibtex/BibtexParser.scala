@@ -106,7 +106,7 @@ class BibtexParser extends Parser {
 
 object BibtexParser {
   /**
-   * Reads a list of BibtexEntries from a file.
+   * Reads a list of BibtexEntries.
    *
    * This does no error handling.
    */
@@ -114,5 +114,16 @@ object BibtexParser {
     val parser = new BibtexParser
     val runner = ReportingParseRunner(parser.file)
     runner.run(input).result.get
+  }
+  
+  /**
+   * Reads a single BibtexEntry.
+   * 
+   * This does no error handling.
+   */
+  def parseEntry(input: scala.io.Source): Option[BibtexEntry] = {
+    val parser = new BibtexParser
+    val runner = ReportingParseRunner(parser.entry)
+    runner.run(input).result
   }
 }

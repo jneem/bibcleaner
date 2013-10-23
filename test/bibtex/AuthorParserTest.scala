@@ -31,13 +31,13 @@ class AuthorParserBasicTest extends ParboiledTest with FlatSpec {
 
   it should "treat cased words correctly" in {
     parse(ReportingParseRunner(p.word), "blah") {
-      assert(parsingResult.result.get.wordCase === Lower())
+      assert(parsingResult.result.get.wordCase === Lower)
     }
     parse(ReportingParseRunner(p.word), "Blah") {
-      assert(parsingResult.result.get.wordCase === Upper())
+      assert(parsingResult.result.get.wordCase === Upper)
     }
     parse(ReportingParseRunner(p.word), "{Blah}") {
-      assert(parsingResult.result.get.wordCase === Uncased())
+      assert(parsingResult.result.get.wordCase === Uncased)
     }
   }
 }

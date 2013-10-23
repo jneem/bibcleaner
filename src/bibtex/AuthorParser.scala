@@ -5,9 +5,9 @@ import scala.collection.mutable.Map
 import org.parboiled.scala._
 
 sealed trait Case
-case class Upper extends Case
-case class Lower extends Case
-case class Uncased extends Case
+case object Upper extends Case
+case object Lower extends Case
+case object Uncased extends Case
   
 class Word(chars: List[PseudoChar]) {
   // The case of a word is the case of its first character that has
@@ -15,15 +15,15 @@ class Word(chars: List[PseudoChar]) {
   def wordCase: Case = {
     chars.find(_.hasCase) match {
       case Some(c) => c.charCase
-      case None => Uncased()
+      case None => Uncased
     }
   }
   
-  def upperCase: Boolean = wordCase == Upper()
-  def lowerCase: Boolean = wordCase == Lower()
-  def noCase: Boolean = wordCase == Uncased()
+  def upperCase: Boolean = wordCase == Upper
+  def lowerCase: Boolean = wordCase == Lower
+  def noCase: Boolean = wordCase == Uncased
   
-  def hasCase: Boolean = this.wordCase != Uncased()
+  def hasCase: Boolean = this.wordCase != Uncased
   
   override def toString: String = chars.mkString
   

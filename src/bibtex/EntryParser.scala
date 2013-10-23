@@ -8,11 +8,11 @@ case class PseudoChar(s: String, special: Boolean = false) {
     def oneCharCase(c: Char): Case = {
       // In bibtex, a digit is considered lower case.
       if (c.isLower || c.isDigit) {
-        Lower()
+        Lower
       } else if (c.isUpper) {
-        Upper()
+        Upper
       } else {
-        Uncased()
+        Uncased
       }
     }
 
@@ -20,15 +20,15 @@ case class PseudoChar(s: String, special: Boolean = false) {
       if (special) {
         s.find(_.isLetterOrDigit) match {
           case Some(c) => oneCharCase(c)
-          case None => Uncased()
+          case None => Uncased
         }
       } else {
-        Uncased()
+        Uncased
       }
     } else oneCharCase(s(0))
   }
 
-  def hasCase: Boolean = this.charCase != Uncased()
+  def hasCase: Boolean = this.charCase != Uncased
 
   override def toString: String = s
 }

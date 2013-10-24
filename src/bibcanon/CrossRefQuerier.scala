@@ -2,6 +2,7 @@ package bibcanon
 
 import util.parsing.json
 import java.net.{URL, URLEncoder}
+import bibtex.BibtexEntry
 
 object CrossRefQuerier {
   /**
@@ -31,4 +32,6 @@ object CrossRefQuerier {
     val bestMatch = outputJSON.head.asInstanceOf[Map[String,Any]]
     bestMatch("doi").asInstanceOf[String]
   }
+  
+  def query(e: BibtexEntry): String = query(e.title + (e.authors map (_.toString)).mkString(", "))
 }

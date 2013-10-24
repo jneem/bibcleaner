@@ -1,6 +1,7 @@
 package bibcanon
 
 import concurrent._
+import ExecutionContext.Implicits.global
 import collection.mutable.{HashMap => MutHashMap, Set => MutSet, MultiMap}
 import java.text.Normalizer
 import bibtex.BibtexEntry
@@ -14,6 +15,8 @@ class Database {
   val publications: MutSet[Publication] = MutSet()
   val venues: MutSet[PublicationVenue] = MutSet()
   val series: MutSet[PublicationSeries] = MutSet()
+  
+  class RedundancyError[T](redundantElements: Iterable[T]) extends Throwable
   
   private val authorNameTable = new MutHashMap[String, MutSet[Person]] with MultiMap[String, Person]
   private val publicationTitleTable = new MutHashMap[String, MutSet[Publication]] with MultiMap[String, Publication]
@@ -31,10 +34,10 @@ class Database {
     s3.trim.toLowerCase
   }
   
-  def authorByName(s: String) = authorNameTable.get(normalize(s))
-  def publicationByTitle(s: String) = publicationTitleTable.get(normalize(s))
-  def venueByTitle(s: String) = venueTitleTable.get(normalize(s))
-  def seriesByTitle(s: String) = seriesTitleTable.get(normalize(s))
+  def authorByName(s: String) = authorNameTable.getOrElse(normalize(s), MutSet())
+  def publicationByTitle(s: String) = publicationTitleTable.getOrElse(normalize(s), MutSet())
+  def venueByTitle(s: String) = venueTitleTable.getOrElse(normalize(s), MutSet())
+  def seriesByTitle(s: String) = seriesTitleTable.getOrElse(normalize(s), MutSet())
   
   def addAuthor(p: Person) {
     authors.add(p)
@@ -44,6 +47,7 @@ class Database {
   def addPublication(p: Publication) {
     publications.add(p)
     publicationTitleTable.addBinding(normalize(p.title), p)
+    // TODO: add authors, etc.
   }
   
   def addVenue(v: PublicationVenue) {
@@ -56,25 +60,34 @@ class Database {
     seriesTitleTable.addBinding(normalize(s.title), s)
   }
   
-  def addBibtexEntry(e: BibtexEntry) {
-    // TODO
-    ???
-  }
-  
   // Check whether the information in `e` is a subset of the information in `canon`.
-  private def matches(e: BibtexEntry, canon: BibtexEntry): Boolean = {
+  private def matches(e: BibtexEntry, canon: Publication): Boolean = {
     (normalize(e.title) == normalize(canon.title)
-        && e.authors.forall(a => canon.authors.exists(_ matches a)))
+        && e.authors.forall(a => canon.authors.exists(_.name matches a)))
     // TODO: check year and journal
   }
   
   // Check whether we have something matching the given entry in the database;
   // if we do, return it.
-  private def retrieveEntry(e: BibtexEntry): Option[BibtexEntry] = {
-    ???
+  private def retrieveMatchingPubs(e: BibtexEntry): Iterable[Publication] = {
+    publicationByTitle(e.title) filter ((p:Publication) => matches(e, p))
   }
   
-  def canonicalizeBibtexEntry(e: BibtexEntry): Future[BibtexEntry] = {
-    ???
+  // TODO
+  private def entry2Publication(e: BibtexEntry): Publication = ???
+  
+  // Look up a bibtex entry online and turn it into a Publication.
+  private def lookupEntry(e: BibtexEntry): Future[Publication] = future {
+    val doi = CrossRefQuerier.query(e)
+    val canonical = DOIQuerier.query(doi)
+    entry2Publication(canonical)
+  }
+  
+  def canonicalizeBibtexEntry(e: BibtexEntry): Future[Publication] = {
+    retrieveMatchingPubs(e) match {
+      case List() => Future.failed(new NotImplementedError("no cached candidates"))
+      case List(p) => Future.successful(p)
+      case ps => Future.failed(new RedundancyError(ps.toSet))
+    }
   }
 }

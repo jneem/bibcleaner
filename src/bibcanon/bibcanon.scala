@@ -1,9 +1,10 @@
 package bibcanon
 
 import collection.mutable.{Set => MutSet}
+import bibtex.Name
 
 class Person {
-  var name = Name()
+  var name = Name("", "")
   
   /// The person's ZentralBlatt id.
   var zbId: Option[String] = None

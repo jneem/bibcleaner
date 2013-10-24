@@ -1,5 +1,6 @@
 package bibcanon
 
+import concurrent._
 import collection.mutable.{HashMap => MutHashMap, Set => MutSet, MultiMap}
 import java.text.Normalizer
 import bibtex.BibtexEntry
@@ -37,7 +38,7 @@ class Database {
   
   def addAuthor(p: Person) {
     authors.add(p)
-    authorNameTable.addBinding(normalize(p.name.family), p)
+    authorNameTable.addBinding(normalize(p.name.last), p)
   }
 
   def addPublication(p: Publication) {
@@ -57,5 +58,23 @@ class Database {
   
   def addBibtexEntry(e: BibtexEntry) {
     // TODO
+    ???
+  }
+  
+  // Check whether the information in `e` is a subset of the information in `canon`.
+  private def matches(e: BibtexEntry, canon: BibtexEntry): Boolean = {
+    (normalize(e.title) == normalize(canon.title)
+        && e.authors.forall(a => canon.authors.exists(_ matches a)))
+    // TODO: check year and journal
+  }
+  
+  // Check whether we have something matching the given entry in the database;
+  // if we do, return it.
+  private def retrieveEntry(e: BibtexEntry): Option[BibtexEntry] = {
+    ???
+  }
+  
+  def canonicalizeBibtexEntry(e: BibtexEntry): Future[BibtexEntry] = {
+    ???
   }
 }

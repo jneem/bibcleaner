@@ -3,6 +3,8 @@ package bibtex
 // A BibtexEntry is essentially a collection of name/value pairs,
 // along with some methods to help in sanitizing the values.
 trait BibtexEntry extends Map[String, String] {
+  def entryType: String
+  
   /**
    * The title field.
    * 
@@ -26,6 +28,7 @@ trait BibtexEntry extends Map[String, String] {
     case None => ""
   }
 
+  // TODO: change some of these to Options.
   // TODO: canonicalize journals also
   def journal: String = getOrElse("journal", "")
 

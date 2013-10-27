@@ -4,7 +4,7 @@ import collection.immutable.HashMap
 import Name.apply
 import scala.Predef.Map.apply
 
-class PlainBibtexEntry(entryType: String, key: String, props: Map[String, String])
+class PlainBibtexEntry(val entryType: String, key: String, props: Map[String, String])
   extends Map[String, String] with BibtexEntry {
   
   override def get(key: String) = props.get(key)

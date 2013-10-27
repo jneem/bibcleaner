@@ -1,48 +1,47 @@
 package bibcanon
 
-import collection.mutable.{Set => MutSet}
+import collection.mutable.{ Set => MutSet }
+import collection.immutable.Range
 import bibtex.Name
 
-class Person {
-  var name = Name("", "")
-  
-  /// The person's ZentralBlatt id.
-  var zbId: Option[String] = None
-  
-  /// The person's arXiv author id.
-  var arxivId: Option[String] = None
-  
-  val publications: MutSet[Publication] = MutSet()
+case class Person(name: Name, arxivId: Option[String] = None) {
 }
 
-class Publication {
-  var title: String = ""
-  val authors: MutSet[Person] = MutSet()
-  var year: Int = 0
-  var venue: Option[PublicationVenue] = None
-  var pages: Option[(Int, Int)] = None
-  
-  /**
-   * Some papers are published in slightly different forms in multiple venues
-   * (e.g. a conference version and a journal version). We try to detect this and
-   * build links between the different versions.
-   * (TODO)
-   */
+trait Publication {
+  def title: String
+  def authors: Seq[Person]
+  def year: Option[Int]
+  def venue: Option[PublicationVenue]
+  def pages: Option[Range]
 }
+
+case class Article(
+  title: String,
+  authors: Seq[Person],
+  year: Option[Int] = None,
+  venue: Option[PublicationVenue] = None,
+  pages: Option[Range] = None) extends Publication
+
+/**
+ * Some papers are published in slightly different forms in multiple venues
+ * (e.g. a conference version and a journal version). We try to detect this and
+ * build links between the different versions.
+ * (TODO)
+ */
 
 object Publication {
 }
 
 /**
  * A PublicationVenue is a place the publications appear.
- * 
+ *
  * This could be a website (e.g. arXiv), conference proceedings, or a
  * journal issue.
  */
 abstract class PublicationVenue {
   val editors: MutSet[Person] = MutSet()
-  var publisher: String = ""
-  var year: Int = 0
+  val publisher: String = ""
+  val year: Int = 0
 
   /// For example, "Proceedings of the 45th Symposium on the Theory of Computing".
   def fullName: String
@@ -52,7 +51,7 @@ abstract class PublicationVenue {
 
 class Proceedings(val conference: Conference) extends PublicationVenue {
   var number: Option[Int] = None
-  
+
   private def ordinal(n: Int) = {
     val endings = Array("th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th")
     if (10 <= n % 100 && n % 100 <= 20) n.toString + "th"
@@ -63,7 +62,7 @@ class Proceedings(val conference: Conference) extends PublicationVenue {
     case None => "Proceedings of the " + conference.title
     case Some(n) => "Proceedings of the " + ordinal(n) + " " + conference.shortTitle
   }
-    
+
   def shortName = number match {
     case None => "Proc. " + conference.shortTitle
     case Some(n) => "Proc. " + ordinal(n) + " " + conference.shortTitle
@@ -73,7 +72,7 @@ class Proceedings(val conference: Conference) extends PublicationVenue {
 class JournalIssue(val journal: Journal) extends PublicationVenue {
   var issue: Int = 0
   val volume: Int = 0
-  
+
   def fullName = journal.title
   def shortName = journal.shortTitle
 }

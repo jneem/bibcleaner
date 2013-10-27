@@ -18,7 +18,6 @@ object CrossRefQuerier {
 
     // This gives us a JSON list of results, sorted by relevance.
     val output = io.Source.fromInputStream(connection.getInputStream).mkString("")
-    System.err.print(output)
     val outputJSON = json.JSON.parseFull(output) match {
       // TODO: throw a more meaningful exception
       case None => throw new IllegalArgumentException("didn't get valid JSON")

@@ -5,6 +5,7 @@ import collection.immutable.Range
 import bibtex.Name
 
 case class Person(name: Name, arxivId: Option[String] = None) {
+  def toBibtex = name.toBibtex
 }
 
 trait Publication {
@@ -13,6 +14,8 @@ trait Publication {
   def year: Option[Int]
   def venue: Option[PublicationVenue]
   def pages: Option[Range]
+  
+  def toBibtex(key: String): String
 }
 
 case class Article(
@@ -20,7 +23,15 @@ case class Article(
   authors: Seq[Person],
   year: Option[Int] = None,
   venue: Option[PublicationVenue] = None,
-  pages: Option[Range] = None) extends Publication
+  pages: Option[Range] = None) extends Publication {
+  
+  // TODO: unescape things properly
+  // TODO: handle corner cases like empty authors
+  override def toBibtex(key: String) = {
+    val auth = authors map (_.toBibtex) mkString " and "
+    "@article{" + key + ",\n" + s"title = {$title},\n" + s"authors = {$auth},\n" + "}\n"
+  }
+}
 
 /**
  * Some papers are published in slightly different forms in multiple venues

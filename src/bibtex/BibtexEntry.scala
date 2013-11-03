@@ -5,6 +5,8 @@ package bibtex
 trait BibtexEntry extends Map[String, String] {
   def entryType: String
   
+  def key: String
+  
   /**
    * The title field.
    * 

@@ -100,7 +100,7 @@ class BibtexParser extends Parser {
   def file: Rule1[List[BibtexEntry]] = rule {
     def subFile: Rule1[List[Option[BibtexEntry]]] =
       zeroOrMore(comment ~> (_ => None) | entry ~~> (Some(_)))
-    subFile ~~> (_.flatten)
+    subFile ~~> (_.flatten) ~ EOI
   }
 }
 
@@ -108,12 +108,15 @@ object BibtexParser {
   /**
    * Reads a list of BibtexEntries.
    *
-   * This does no error handling.
+   * This does no error handling (besides printing the parse errors).
    */
   def parse(input: scala.io.Source): List[BibtexEntry] = {
     val parser = new BibtexParser
-    val runner = ReportingParseRunner(parser.file)
-    runner.run(input).result.get
+    val runner = RecoveringParseRunner(parser.file)
+    val result = runner.run(input)
+    result.parseErrors foreach println
+    
+    result.result.get
   }
   
   /**

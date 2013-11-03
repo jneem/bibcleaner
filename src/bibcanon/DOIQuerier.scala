@@ -8,9 +8,14 @@ import bibtex.{BibtexEntry,BibtexParser}
 object DOIQuerier {
   /**
    * Query a DOI from dx.doi.org. This is a blocking method.
+   * 
+   * TODO: rather than getting bibtex and parsing it, ask for
+   * "application/citeproc+json" instead. Crossref doesn't seem to
+   * escape its bibtex properly.
    */
   def query(doi: String): BibtexEntry = {
     val url = new URL(doi)
+    println(doi)
     val connection = url.openConnection()
     connection.addRequestProperty("Accept", "application/x-bibtex")
     connection.connect()

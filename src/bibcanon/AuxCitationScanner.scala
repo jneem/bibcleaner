@@ -1,6 +1,7 @@
 package bibcanon
 
 import java.util.regex._
+import bibtex._
 
 object AuxCitationScanner {
   /**
@@ -17,6 +18,11 @@ object AuxCitationScanner {
       m.matches()
       m.group(1)
     }
+  }
+  
+  def filter(entries: Iterator[BibtexEntry], auxInput: io.Source): Iterator[BibtexEntry] = {
+    val keys = scan(auxInput).toSet
+    entries filter (keys contains _.key)
   }
 
 }

@@ -43,6 +43,12 @@ case class Name(first: String, von: String, last: String, jr: String) {
     }
     last == other.last && abbrev(first, other.first) && abbrev(von, other.von) && abbrev(jr, other.jr)
   }
+  
+  // TODO: check that this conversion is always the inverse of the one in AuthorParser
+  def toBibtex = {
+    if (jr.isEmpty) s"$von $last, $first"
+    else s"$von $last, $jr, $first"
+  }
 }
 
 object Name {

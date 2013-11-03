@@ -8,5 +8,6 @@
 	<classpathentry kind="lib" path="jars/parboiled-scala_2.10-1.1.5.jar"/>
 	<classpathentry kind="lib" path="jars/scalatest_2.10-2.0.M5b.jar"/>
 	<classpathentry kind="lib" path="jars/junit-4.10.jar"/>
+	<classpathentry kind="lib" path="jars/slick_2.10.1-2.0.0-M1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

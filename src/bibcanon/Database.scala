@@ -6,12 +6,45 @@ import collection.mutable.{ HashMap => MutHashMap, Set => MutSet, MultiMap }
 import java.text.Normalizer
 import bibtex.BibtexEntry
 import bibtex.Name
+import scala.slick.driver.SQLiteDriver.simple._
+import Database.threadLocalSession
 
 /**
  * A database is a collection of authors, publications, journals, etc. with the
  * appropriate links between them and various lookup tables.
  */
 class Database {
+
+  object AuthorTable extends Table[(Int, String, String, String, String, String)]("AUTHORS") {
+    def id = column[Int]("AUTHOR_ID", O.PrimaryKey, O.AutoInc)
+    def firstName = column[String]("NAME_FIRST")
+    def vonName = column[String]("NAME_VON")
+    def lastName = column[String]("NAME_LAST")
+    def jrName = column[String]("NAME_JR")
+    def arxivId = column[String]("ARVIX_ID")
+
+    def * = id ~ firstName ~ vonName ~ lastName ~ jrName ~ arxivId
+  }
+
+  object PublicationTable extends Table[(Int, String, String, String, Int)]("PUBLICATIONS") {
+    def id = column[Int]("PUB_ID", O.PrimaryKey, O.AutoInc)
+    def clazz = column[String]("CLASS") // The type of publication (e.g. "article")
+    def title = column[String]("TITLE")
+    def authors = column[String]("AUTHORS") // List of author ids, in csv format.
+    def venue = column[Int]("VENUE")
+
+    def * = id ~ clazz ~ title ~ authors ~ venue
+  }
+
+  object VenueTable extends Table[(Int, String, String, Int)]("VENUES") {
+    def id = column[Int]("VEN_ID", O.PrimaryKey, O.AutoInc)
+    def title = column[String]("TITLE")
+    def editors = column[String]("EDITORS") // List of author ids, in csv format.
+    def year = column[Int]("YEAR")
+
+    def * = id ~ title ~ editors ~ year
+  }
+
   val authors: MutSet[Person] = MutSet()
   val publications: MutSet[Publication] = MutSet()
   val venues: MutSet[PublicationVenue] = MutSet()

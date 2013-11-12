@@ -6,7 +6,7 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class NameMatchTest extends ParboiledTest with FlatSpec {
+class NameMatchTest extends FlatSpec {
   behavior of "Name's matches method"
   
   it should "match on empty names" in {

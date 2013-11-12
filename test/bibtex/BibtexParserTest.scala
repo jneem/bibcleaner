@@ -4,11 +4,11 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.parboiled.scala.testing.ParboiledTest
 import org.parboiled.scala.ReportingParseRunner
-import org.scalatest.FlatSpec
+import org.scalatest.FlatSpecLike
 import org.parboiled.scala.string2Input
 
 @RunWith(classOf[JUnitRunner])
-class BibtexParserBasicTest extends ParboiledTest with FlatSpec {
+class BibtexParserBasicTest extends ParboiledTest with FlatSpecLike {
   val p = new BibtexParser()
   type Result = String
   
@@ -41,7 +41,7 @@ class BibtexParserBasicTest extends ParboiledTest with FlatSpec {
   }
 }
 
-class BibtexParserEntryTest extends ParboiledTest with FlatSpec {
+class BibtexParserEntryTest extends ParboiledTest with FlatSpecLike {
   val p = new BibtexParser()
   type Result = BibtexEntry
   
@@ -65,7 +65,7 @@ class BibtexParserEntryTest extends ParboiledTest with FlatSpec {
   }
 }
 
-class EntryParserTest extends ParboiledTest with FlatSpec {
+class EntryParserTest extends ParboiledTest with FlatSpecLike {
   val p = new EntryParser()
   type Result = String
   

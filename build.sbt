@@ -21,7 +21,7 @@ libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.11.0" % "test"
 
 // Scalatest
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.0.M5b" % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % "2.0" % "test"
 
 
 // Parboiled

@@ -6,7 +6,7 @@ import org.scalatest.Suites
 import org.parboiled.scala.testing.ParboiledTest
 import org.parboiled.scala.ReportingParseRunner
 import org.parboiled.scala.Rule1
-import org.scalatest.FlatSpec
+import org.scalatest.FlatSpecLike
 import scala.collection.immutable.Map
 import org.parboiled.scala.string2Input
 
@@ -16,7 +16,7 @@ class AuthorTests extends Suites(
   new AuthorParserNameTest,
   new AuthorParserListTest)
 
-class AuthorParserBasicTest extends ParboiledTest with FlatSpec {
+class AuthorParserBasicTest extends ParboiledTest with FlatSpecLike {
   val p = new AuthorParser()
   type Result = Word
 
@@ -42,7 +42,7 @@ class AuthorParserBasicTest extends ParboiledTest with FlatSpec {
   }
 }
 
-trait TableTest extends ParboiledTest with FlatSpec {
+trait TableTest extends ParboiledTest with FlatSpecLike {
   def checkTable(rule: Rule1[Result], tab: Map[String, Result]) {
     for ((input, name) <- tab) {
       parse(ReportingParseRunner(rule), input) {

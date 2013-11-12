@@ -8,6 +8,11 @@ scalaSource in Compile := baseDirectory.value / "src"
 
 scalaSource in Test := baseDirectory.value / "test"
 
+unmanagedSourceDirectories in Compile := (scalaSource in Compile).value :: Nil
+
+unmanagedSourceDirectories in Test := (scalaSource in Test).value :: Nil
+
+
 // JUnit
 
 libraryDependencies += "junit" % "junit" % "4.11" % "test"
@@ -38,4 +43,11 @@ libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick" % "1.0.1",
   "org.slf4j" % "slf4j-nop" % "1.6.4"
 )
+
+
+// Play JSON
+
+resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
+
+libraryDependencies += "com.typesafe.play" %% "play-json" % "2.2.1"
 

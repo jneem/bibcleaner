@@ -41,6 +41,7 @@ class BibtexParserBasicTest extends ParboiledTest with FlatSpecLike {
   }
 }
 
+@RunWith(classOf[JUnitRunner])
 class BibtexParserEntryTest extends ParboiledTest with FlatSpecLike {
   val p = new BibtexParser()
   type Result = BibtexEntry
@@ -60,11 +61,12 @@ class BibtexParserEntryTest extends ParboiledTest with FlatSpecLike {
 """
     parse(ReportingParseRunner(p.entry), entry) {
       assert(parsingResult.result.get.title ===
-        "{On extracting common random bits from correlated sources on large alphabets}")
+        "On extracting common random bits from correlated sources on large alphabets")
     }
   }
 }
 
+@RunWith(classOf[JUnitRunner])
 class EntryParserTest extends ParboiledTest with FlatSpecLike {
   val p = new EntryParser()
   type Result = String

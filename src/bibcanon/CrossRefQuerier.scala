@@ -1,8 +1,8 @@
 package bibcanon
 
-import util.parsing.json
 import java.net.{URL, URLEncoder}
 import bibtex.BibtexEntry
+import play.api.libs.json._
 
 object CrossRefQuerier {
   /**
@@ -18,18 +18,11 @@ object CrossRefQuerier {
 
     // This gives us a JSON list of results, sorted by relevance.
     val output = io.Source.fromInputStream(connection.getInputStream).mkString("")
-    val outputJSON = json.JSON.parseFull(output) match {
-      // TODO: throw a more meaningful exception
-      case None => throw new IllegalArgumentException("didn't get valid JSON")
-      case Some(o) => o.asInstanceOf[List[Any]]
-    }
-    if (outputJSON.isEmpty) {
-      throw new IllegalArgumentException("didn't get any results")
-    }
-
-    // Extract the DOI from the most relevant result. 
-    val bestMatch = outputJSON.head.asInstanceOf[Map[String,Any]]
-    bestMatch("doi").asInstanceOf[String]
+    Json.parse(output) match {
+      // TODO: better exception handling
+      case JsArray(a) => (a.head \ "doi").as[String]
+      case _ => throw new IllegalArgumentException("got invalid json")
+    } 
   }
   
   def query(e: BibtexEntry): String = query(e.title + (e.authors map (_.toString)).mkString(", "))

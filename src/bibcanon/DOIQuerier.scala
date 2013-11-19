@@ -28,15 +28,18 @@ object DOIQuerier {
     }
     
     def getPages(p: JsValue): Option[Range] = {
-      def parseRange(s: String): Range = {
+      def parseRange(s: String): Option[Range] = {
         val ss = s split '-'
         try {
-          ss(0).toInt to ss(1).toInt
+          Some(ss(0).toInt to ss(1).toInt)
         } catch {
-          case ex: Exception => throw new DOIJsonException
+          case ex: Exception => {
+            println(s"Malformed page range: %s")
+            None
+          }
         }
       }
-      p.asOpt[String] map parseRange
+      p.asOpt[String] flatMap parseRange
     }
 
     new PublicationRecord {

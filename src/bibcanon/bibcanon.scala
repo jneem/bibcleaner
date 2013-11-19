@@ -12,9 +12,7 @@ trait Publication {
   def title: String
   def authors: Seq[Person]
   def year: Option[Int]
-  def venue: Option[PublicationVenue]
-  def pages: Option[Range]
-  
+
   def toBibtex(key: String): String
 }
 
@@ -24,12 +22,26 @@ case class Article(
   year: Option[Int] = None,
   venue: Option[PublicationVenue] = None,
   pages: Option[Range] = None) extends Publication {
-  
+
   // TODO: unescape things properly
   // TODO: handle corner cases like empty authors
   override def toBibtex(key: String) = {
     val auth = authors map (_.toBibtex) mkString " and "
     "@article{" + key + ",\n" + s"title = {$title},\n" + s"authors = {$auth},\n" + "}\n"
+  }
+}
+
+case class Book(
+  title: String,
+  authors: Seq[Person],
+  year: Option[Int] = None,
+  publisher: Option[String] = None
+  ) extends Publication {
+  
+  // TODO: unify avoid code duplication
+  override def toBibtex(key: String) = {
+    val auth = authors map (_.toBibtex) mkString " and "
+    "@book{" + key + ",\n" + s"title = {$title},\n" + s"authors = {$auth},\n" + "}\n"
   }
 }
 

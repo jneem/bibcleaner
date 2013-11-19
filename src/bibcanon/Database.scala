@@ -15,6 +15,7 @@ import Database.threadLocalSession
  */
 class Database {
 
+  // TODO: author to publication is a many-to-many relationship. Use an auxiliary table.
   object AuthorTable extends Table[(Int, String, String, String, String, String)]("AUTHORS") {
     def id = column[Int]("AUTHOR_ID", O.PrimaryKey, O.AutoInc)
     def firstName = column[String]("NAME_FIRST")
@@ -50,7 +51,10 @@ class Database {
   val venues: MutSet[PublicationVenue] = MutSet()
   val series: MutSet[PublicationSeries] = MutSet()
 
-  class RedundancyError[T](redundantElements: Iterable[T]) extends Throwable
+  class RedundancyException[T](redundantElements: Iterable[T]) extends Exception
+  class UnknownTypeException(typ: String) extends Exception {
+    override def toString = super.toString + ": " + typ
+  }
 
   private val authorNameTable = new MutHashMap[String, MutSet[Person]] with MultiMap[String, Person]
   private val publicationTitleTable = new MutHashMap[String, MutSet[Publication]] with MultiMap[String, Publication]
@@ -82,7 +86,7 @@ class Database {
     val as = matchingAuthors(n)
     if (as.isEmpty) Person(name = n)
     else if (as.size == 1) as.head
-    else throw new RedundancyError(as)
+    else throw new RedundancyException(as)
   }
 
   def addAuthor(p: Person) {
@@ -130,9 +134,13 @@ class Database {
         title = pr.title,
         authors = authors,
         year = pr.year,
-        pages = pr.pages
-        )
-    } else throw new NotImplementedError("entry2Publication entryTypes")
+        pages = pr.pages)
+    } else if (pr.publicationType == "book") {
+      Book(
+        title = pr.title,
+        authors = authors,
+        year = pr.year)
+    } else throw new UnknownTypeException(pr.publicationType)
   }
 
   // Look up a bibtex entry online and turn it into a Publication.
@@ -143,9 +151,10 @@ class Database {
   }
 
   def canonicalizeBibtexEntry(e: BibtexEntry): Future[Publication] = {
+    // TODO: don't lookupEntry if the type is "unpublished"
     val pubs = retrieveMatchingPubs(e)
     if (pubs.isEmpty) lookupEntry(e)
     else if (pubs.tail.isEmpty) Future.successful(pubs.head)
-    else Future.failed(new RedundancyError(pubs.toSet))
+    else Future.failed(new RedundancyException(pubs.toSet))
   }
 }

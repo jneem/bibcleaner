@@ -121,16 +121,17 @@ class Database {
 
   // Turns a BibtexEntry (which we assume not to be in the database, although
   // some of its authors may be) into a Publication.
-  private def entry2Publication(e: BibtexEntry): Publication = {
-    val authors = e.authors map getAuthor
+  private def record2Publication(pr: PublicationRecord): Publication = {
+    val authors = pr.authors map getAuthor
 
     // TODO: support more entry types
-    // TODO: consider turning BibtexEntry.entryType into an enum
-    if (e.entryType == "article") {
+    if (pr.publicationType == "article-journal") {
       Article(
-        title = e.title,
+        title = pr.title,
         authors = authors,
-        year = Some(e.year))
+        year = pr.year,
+        pages = pr.pages
+        )
     } else throw new NotImplementedError("entry2Publication entryTypes")
   }
 
@@ -138,7 +139,7 @@ class Database {
   private def lookupEntry(e: BibtexEntry): Future[Publication] = future {
     val doi = CrossRefQuerier.query(e)
     val canonical = DOIQuerier.query(doi)
-    entry2Publication(canonical)
+    record2Publication(canonical)
   }
 
   def canonicalizeBibtexEntry(e: BibtexEntry): Future[Publication] = {

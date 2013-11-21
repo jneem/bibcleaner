@@ -63,7 +63,7 @@ class AuthorParser extends EntryParser {
     if (firstVon == -1 || firstVon == len-1) {
       // If there is no von, then the last word is the last name, and everything
       // else is the first name. Recall that there must be a last name, so even the
-      // von looks like it should start on the last character, we just leave out the von.
+      // von looks like it should start on the last word, we just leave out the von.
       Name(str(0, len-1), "", str(len-1, len), "")
     } else {
       Name(str(0, firstVon), str(firstVon, lastVon+1), str(lastVon+1, len), "")

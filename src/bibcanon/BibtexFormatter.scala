@@ -25,7 +25,7 @@ object BibtexFormatter {
 
     // Make any lower-cased words uncased.
     def uncase(s: String) = {
-      if (!s.isEmpty && s(0).isLower) "{" + s(0) + "}" + s.tail
+      if (!s.isEmpty && s(0).isLower) "{" + s + "}"
       else s
     }
     
@@ -50,8 +50,8 @@ object BibtexFormatter {
     
     val von = escapeAnd(n.von)
     val first = escapeAnd(n.first)
-    val jr = if (!n.jr.trim.isEmpty) ", " + escapeAnd(n.jr) else ""
-    s"$von $last, $first$jr".trim
+    val jr = if (!n.jr.trim.isEmpty) escapeAnd(n.jr) + ", " else ""
+    s"$von $last, $jr$first".trim
   }
   
   def authors2Bibtex(ns: List[Name]) = (ns map author2Bibtex) mkString " and "

@@ -66,9 +66,13 @@ class AuthorParserNameTest extends TableTest {
     "Jean {de} {la} fontaine" -> Name("Jean de la", "", "fontaine", ""),
     "Jean De La Fontaine" -> Name("Jean De La", "", "Fontaine", ""),
     "jean De la Fontaine" -> Name("", "jean De la", "Fontaine", ""),
-    "Jean de La Fontaine" -> Name("Jean", "de", "La Fontaine", ""))
+    "Jean de La Fontaine" -> Name("Jean", "de", "La Fontaine", ""),
+    "Alfred Elton {van} Vogt" -> Name("Alfred Elton van", "", "Vogt", ""),
+    "Alfred Elton {\\relax van} Vogt" -> Name("Alfred Elton", "relax van", "Vogt", ""),
+    "Alfred Elton {\\relax Van} Vogt" -> Name("Alfred Elton relax Van", "", "Vogt", "")
+  )
 
-  it should "correctly pass the \"Jean de la Fontaine\" test" in {
+  it should "correctly pass the firstVonLast \"Jean de la Fontaine\" test" in {
     checkTable(p.firstVonLast, firstVonLast)
   }
 
@@ -79,10 +83,26 @@ class AuthorParserNameTest extends TableTest {
     "de la fontaine, Jean" -> Name("Jean", "de la", "fontaine", ""),
     "De La Fontaine, Jean" -> Name("Jean", "", "De La Fontaine", ""),
     "De la Fontaine, Jean" -> Name("Jean", "De la", "Fontaine", ""),
-    "de La Fontaine, Jean" -> Name("Jean", "de", "La Fontaine", ""))
+    "de La Fontaine, Jean" -> Name("Jean", "de", "La Fontaine", "")
+  )
 
-  it should "correctly pass the \"Jean de la Fontaine\" test" in {
+  it should "correctly pass the vonLastFirst \"Jean de la Fontaine\" test" in {
     checkTable(p.vonLastFirst, vonLastFirst)
+  }
+
+  val vonLastJrFirst = Map(
+    "de la fontaine, jr, Jean" -> Name("Jean", "de la", "fontaine", "jr"),
+    "De La Fontaine, jr, Jean" -> Name("Jean", "", "De La Fontaine", "jr"),
+    "De la Fontaine, jr, Jean" -> Name("Jean", "De la", "Fontaine", "jr"),
+    "de La Fontaine, jr, Jean" -> Name("Jean", "de", "La Fontaine", "jr")
+  )
+
+  it should "correctly pass the vonLastJrFirst \"Jean de la Fontaine\" test" in {
+    checkTable(p.vonLastJrFirst, vonLastJrFirst)
+  }
+
+  it should "correctly detect the name format" in {
+    checkTable(p.name, firstVonLast ++ vonLastFirst ++ vonLastJrFirst)
   }
 }
 

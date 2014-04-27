@@ -10,15 +10,15 @@ import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop.forAll
 
 @RunWith(classOf[JUnitRunner])
-class BibtexFormatterTest extends FlatSpec { // with Checkers {
+class BibtexFormatterTest extends FlatSpec with Checkers {
   behavior of "BibtexFormatter"
 
   it should "format some given author names as expected" in {
     val nameTable = Map(
       Name("Joe", "Neeman") -> "Neeman, Joe",
-      Name("Ludwig", "van", "Beethoven", "jr") -> "van Beethoven, Ludwig, jr",
-      Name("Ludwig", "van", "beethoven", "jr") -> "van {b}eethoven, Ludwig, jr",
-      Name("Mr.", "and") -> "{a}{nd}, Mr."
+      Name("Ludwig", "van", "Beethoven", "jr") -> "van Beethoven, jr, Ludwig",
+      Name("Ludwig", "van", "beethoven", "jr") -> "van {beethoven}, jr, Ludwig",
+      Name("Mr.", "and") -> "{a{nd}}, Mr."
       )
 
     nameTable foreach {
@@ -28,8 +28,7 @@ class BibtexFormatterTest extends FlatSpec { // with Checkers {
   }
   
   it should "be a one-sided inverse of AuthorParser.parse" in {
-    // FIXME: get this compiling
-    //check(new BibtexFormatterSpecification)
+    check(new BibtexFormatterSpecification)
   }
 }
 
@@ -37,8 +36,8 @@ class BibtexFormatterSpecification extends Properties("BibtexFormatter") {
   import bibtex.AuthorParser
   
   lazy val genWord: Gen[String] = for {
-    c <- arbitrary[Char] if !c.isWhitespace
-    w <- Gen.oneOf("", genWord)
+    c <- Gen.alphaChar
+    w <- Gen.oneOf(Gen.const(""), genWord)
   } yield c.toString + w
   
   lazy val genLowerWord = genWord filter (s => s(0).isLower)
@@ -46,7 +45,7 @@ class BibtexFormatterSpecification extends Properties("BibtexFormatter") {
   lazy val genOneNonEmptyName: Gen[String] = for {
     w <- genWord
     ws <- genOneName
-  } yield w + " " + ws
+  } yield (w + " " + ws).trim
   
   lazy val genOneName: Gen[String] = Gen.oneOf(Gen.const(""), genWord)
   
@@ -56,7 +55,7 @@ class BibtexFormatterSpecification extends Properties("BibtexFormatter") {
     lazy val nonEmptyVon = for {
       ws <- genOneName
       w <- genLowerWord
-    } yield ws + " " + w
+    } yield (ws + " " + w).trim
     Gen.oneOf(Gen.const(""), nonEmptyVon)
   }
   
@@ -71,6 +70,7 @@ class BibtexFormatterSpecification extends Properties("BibtexFormatter") {
   
   property("one-sided inverse") = forAll { (n:Name) =>
     val source = io.Source.fromString(BibtexFormatter.author2Bibtex(n))
-    AuthorParser.parse(source) == n
+    val result = AuthorParser.parse(source)
+    result.head == n
   }
 }

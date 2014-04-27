@@ -2,7 +2,9 @@ package bibtex
 
 import org.parboiled.scala._
 
-case class PseudoChar(s: String, special: Boolean = false) {
+// topLevel specifies whether this pseudochar was parsed
+// at the top level of braces.
+case class PseudoChar(s: String, topLevel: Boolean = false) {
   def braced: Boolean = s(0) == '{'
   def charCase: Case = {
     def oneCharCase(c: Char): Case = {
@@ -17,11 +19,17 @@ case class PseudoChar(s: String, special: Boolean = false) {
     }
 
     if (this.braced) {
-      if (special) {
-        s.find(_.isLetterOrDigit) match {
-          case Some(c) => oneCharCase(c)
-          case None => Uncased
-        }
+      if (topLevel && s(1) == '\\') {
+        // This character looks like {\foo a}; i.e. it is some TeX command
+        // in braces.
+        // Find the index after the TeX command.
+        val i = s.indexWhere(!_.isLetter, 2)
+        if (i != -1) {
+          // Find the first letter after the TeX command.
+          val j = s.indexWhere(_.isLetter, i)
+          if (j != -1) oneCharCase(s(j))
+          else Uncased
+        } else Uncased
       } else {
         Uncased
       }
@@ -92,11 +100,9 @@ class EntryParser extends Parser {
   }
 
   // If a braced string which occurs at toplevel has a backslash as its first
-  // non-brace character then it is "special." This gives it special treatment
-  // in terms of determining its case.
+  // non-brace character then it has special rules for determining its case.
   def toplevelBracedString: Rule1[PseudoChar] = rule {
-    def isSpecial(s: String): Boolean = s(1) == '\\'
-    (bracedString ~> isSpecial) ~~> (PseudoChar(_, _))
+    bracedString ~~> (PseudoChar(_, true))
   }
 
   // A pseudo-character is either

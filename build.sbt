@@ -21,12 +21,12 @@ libraryDependencies += "junit" % "junit" % "4.11" % "test"
 
 resolvers += "Sonatype Releases" at "http://oss.sonatype.org/content/repositories/releases"
 
-libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.11.0" % "test"
+libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.11.3" % "test"
 
 
 // Scalatest
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.0" % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % "2.1.4" % "test"
 
 
 // Parboiled

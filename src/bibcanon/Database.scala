@@ -22,7 +22,7 @@ class Database {
     def vonName = column[String]("NAME_VON")
     def lastName = column[String]("NAME_LAST")
     def jrName = column[String]("NAME_JR")
-    def arxivId = column[String]("ARVIX_ID")
+    def arxivId = column[String]("ARXIV_ID")
 
     def * = id ~ firstName ~ vonName ~ lastName ~ jrName ~ arxivId
   }

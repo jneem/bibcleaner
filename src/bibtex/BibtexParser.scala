@@ -86,7 +86,7 @@ class BibtexParser extends Parser {
   }
 
   def entry: Rule1[BibtexEntry] = rule {
-    "@" ~ keep(name) ~ WS ~ "{" ~ WS ~ key ~ comma ~ nameValueList ~ "}" ~ WS ~~> PlainBibtexEntry.apply
+    "@" ~ keep(name) ~ WS ~ "{" ~ WS ~ key ~ comma ~ nameValueList ~ "}" ~ WS ~~> BibtexEntry.apply
   }
 
   def endline: Rule0 = zeroOrMore(noneOf("\n\r")) ~ oneOrMore(anyOf("\n\r"))

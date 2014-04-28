@@ -7,7 +7,6 @@ import java.text.Normalizer
 import bibtex.BibtexEntry
 import bibtex.Name
 import scala.slick.driver.SQLiteDriver.simple._
-import Database.threadLocalSession
 
 /**
  * A database is a collection of authors, publications, journals, etc. with the
@@ -15,8 +14,7 @@ import Database.threadLocalSession
  */
 class Database {
 
-  // TODO: author to publication is a many-to-many relationship. Use an auxiliary table.
-  object AuthorTable extends Table[(Int, String, String, String, String, String)]("AUTHORS") {
+  class AuthorTable(tag: Tag) extends Table[(Int, String, String, String, String, String)](tag, "AUTHORS") {
     def id = column[Int]("AUTHOR_ID", O.PrimaryKey, O.AutoInc)
     def firstName = column[String]("NAME_FIRST")
     def vonName = column[String]("NAME_VON")
@@ -24,26 +22,44 @@ class Database {
     def jrName = column[String]("NAME_JR")
     def arxivId = column[String]("ARXIV_ID")
 
-    def * = id ~ firstName ~ vonName ~ lastName ~ jrName ~ arxivId
+    def * = (id, firstName, vonName, lastName, jrName, arxivId)
   }
+  
+  val authorTable = TableQuery[AuthorTable]
 
-  object PublicationTable extends Table[(Int, String, String, String, Int)]("PUBLICATIONS") {
+  class PublicationTable(tag: Tag) extends Table[(Int, String, String, String, Int)](tag, "PUBLICATIONS") {
     def id = column[Int]("PUB_ID", O.PrimaryKey, O.AutoInc)
     def clazz = column[String]("CLASS") // The type of publication (e.g. "article")
     def title = column[String]("TITLE")
     def authors = column[String]("AUTHORS") // List of author ids, in csv format.
     def venue = column[Int]("VENUE")
 
-    def * = id ~ clazz ~ title ~ authors ~ venue
+    def * = (id, clazz, title, authors, venue)
+  }
+  
+  val publicationTable = TableQuery[PublicationTable]
+  
+  class AuthorPubTable(tag: Tag) extends Table[(Int, Int, Int)](tag, "AUTHOR_PUB") {
+    def authorId = column[Int]("AUTHOR_ID")
+    def pubId = column[Int]("PUB_ID")
+    
+    def authorKey = foreignKey("AUTHOR_FK", authorId, authorTable)(_.id)
+    def pubKey = foreignKey("PUB_FK", pubId, publicationTable)(_.id)
+    
+    // For some publications, the author order is important.
+    // This field stores the position of the author in the author list (starting from 0).
+    def authorIndex = column[Int]("AUTHOR_INDEX")
+    
+    def * = (authorId, pubId, authorIndex)
   }
 
-  object VenueTable extends Table[(Int, String, String, Int)]("VENUES") {
+  class VenueTable(tag: Tag) extends Table[(Int, String, String, Int)](tag, "VENUES") {
     def id = column[Int]("VEN_ID", O.PrimaryKey, O.AutoInc)
     def title = column[String]("TITLE")
     def editors = column[String]("EDITORS") // List of author ids, in csv format.
     def year = column[Int]("YEAR")
 
-    def * = id ~ title ~ editors ~ year
+    def * = (id, title, editors, year)
   }
 
   val authors: MutSet[Person] = MutSet()

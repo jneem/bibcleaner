@@ -6,7 +6,7 @@ import bibtex.Name
  * A record describing a publication.
  * 
  * This is different from a BibtexEntry, because BibtexEntry is tied
- * to particular textural representations (e.g., of author names).
+ * to particular textual representations (e.g., of author names).
  * 
  * This is not a semantic structure, in the sense that we only
  * give author and journal names, and not references to author

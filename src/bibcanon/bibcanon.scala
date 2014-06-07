@@ -4,11 +4,12 @@ import collection.mutable.{ Set => MutSet }
 import collection.immutable.Range
 import bibtex.Name
 
-case class Person(name: Name, arxivId: Option[String] = None) {
+case class Person(id: Int, name: Name, arxivId: String) {
   def toBibtex = name.toBibtex
 }
 
 trait Publication {
+  def id: Int
   def title: String
   def authors: Seq[Person]
   def year: Option[Int]
@@ -17,6 +18,7 @@ trait Publication {
 }
 
 case class Article(
+  id: Int,
   title: String,
   authors: Seq[Person],
   year: Option[Int] = None,
@@ -32,6 +34,7 @@ case class Article(
 }
 
 case class Book(
+  id: Int,
   title: String,
   authors: Seq[Person],
   year: Option[Int] = None,

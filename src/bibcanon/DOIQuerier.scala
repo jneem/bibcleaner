@@ -17,9 +17,15 @@ object DOIQuerier {
     // TODO: only first and last names are currently handled. Check
     // what crossref returns for people with more complicated names.
     
-    def getAuthors(as: JsValue): List[Name] = {
+    def getAuthors(as: JsValue): List[Person] = {
       try {
-        def author(a: JsObject): Name = Name((a \ "given").as[String], (a \ "family").as[String])
+        def author(a: JsObject): Person = {
+          val n = Name((a \ "given").as[String], (a \ "family").as[String])
+          new Person {
+            def name = n
+            def arXivId = None
+          }
+        }
         as.asInstanceOf[JsArray].value.toList map (x => author(x.asInstanceOf[JsObject]))
       } //catch {
         // TODO: give a more informative message

@@ -4,15 +4,77 @@ import collection.mutable.{ Set => MutSet }
 import collection.immutable.Range
 import bibtex.Name
 
-case class Person(id: Int, name: Name, arxivId: String) {
+/**
+ * A person has a name, and possibly some associated metadata.
+ */
+trait Person {
+  def name: Name
+  def arXivId: Option[String]
+
   def toBibtex = name.toBibtex
 }
 
-trait Publication {
+object Person {
+  def apply(nameVal: Name, aId: String="") = new Person {
+    def name = nameVal
+    val arXivId = if (aId == "") None else Some(aId)
+  }
+}
+
+
+/**
+ * An identified person.
+ *
+ * Besides having a name and whatever other metadata, this person
+ * also has a unique internal id. Instances of this trait should
+ * not be instantiated manually, but only by Database (which is in
+ * a position to ensure that everyone has a unique id).
+ */
+trait IdPerson extends Person {
   def id: Int
+}
+
+/**
+ * A record describing a publication.
+ * 
+ * This is different from a BibtexEntry, because BibtexEntry is tied
+ * to particular textual representations (e.g., of author names).
+ * 
+ * This is not a semantic structure, in the sense that we only
+ * give author and journal names, and not references to author
+ * and journal objects.
+ */
+trait PublicationRecord {
+  // Mandatory fields
   def title: String
   def authors: Seq[Person]
+  def publicationType: String
+  
+  // Optional fields
   def year: Option[Int]
+  
+  /**
+   * Journal name, for example.
+   */
+  def containerTitle: Option[String]
+  
+  def pages: Option[Range]
+  def issue: Option[Int]
+  def volume: Option[Int]
+  def publisher: Option[String]
+  def doi: Option[String]
+}
+
+trait Publication extends PublicationRecord {
+  def id: Int
+  def authors: Seq[IdPerson]
+
+  def containerTitle: Option[String] = None
+  def pages: Option[Range] = None
+  def issue: Option[Int] = None
+  def volume: Option[Int] = None
+  def publisher: Option[String] = None
+  def doi: Option[String] = None
 
   def toBibtex(key: String): String
 }
@@ -20,10 +82,12 @@ trait Publication {
 case class Article(
   id: Int,
   title: String,
-  authors: Seq[Person],
+  authors: Seq[IdPerson],
   year: Option[Int] = None,
   venue: Option[PublicationVenue] = None,
-  pages: Option[Range] = None) extends Publication {
+  override val pages: Option[Range] = None) extends Publication {
+
+  def publicationType = "article"
 
   // TODO: unescape things properly
   // TODO: handle corner cases like empty authors
@@ -36,10 +100,12 @@ case class Article(
 case class Book(
   id: Int,
   title: String,
-  authors: Seq[Person],
+  authors: Seq[IdPerson],
   year: Option[Int] = None,
-  publisher: Option[String] = None
+  override val publisher: Option[String] = None
   ) extends Publication {
+
+  def publicationType = "book"
   
   // TODO: unify avoid code duplication
   override def toBibtex(key: String) = {

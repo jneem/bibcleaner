@@ -1,6 +1,7 @@
-package bibcanon
+package bibcanon.data
 
 import concurrent._
+import bibcanon._
 import ExecutionContext.Implicits.global
 import collection.mutable.{ HashMap => MutHashMap, Set => MutSet, MultiMap }
 import java.text.Normalizer
@@ -9,60 +10,8 @@ import bibtex.Name
 import scala.slick.driver.JdbcProfile
 import scala.slick.jdbc.JdbcBackend.Database
 
-/**
- * Notes on duplicates authors:
- * - we allow the insertion of a new author even if the name given already
- *   exists (because names need not be unique).
- * - when inserting a new author with the same (or similar) name as an existing author,
- *   we flag the similarity as requiring manual resolution. If the manual resolution
- *   says that they are really the same person, we select one entry as the canonical
- *   one, and store that fact. For example, "Joe Neeman" could be the canonical entry
- *   and "J Neeman" could be the non-canonical one. By pointing "J Neeman" at
- *   "Joe Neeman," we ensure that future lookups to "J Neeman" return the canonical
- *   entry.
- * - the relationship between canonical and non-canonical entries can be many-to-one.
- * - if there are multiple canonical entries for a given name, we need to somehow
- *   add manual resolution to publications.
- */
-
-/**
- * A database is a collection of authors, publications, journals, etc. with the
- * appropriate links between them and various lookup tables.
- */
-class PublicationDatabase(val profile: JdbcProfile, db: Database) {
-
+trait PublicationDatabase extends Utils {this: Profile with AuthorDatabase =>
   import profile.simple._
-
-  class AuthorTable(tag: Tag) extends Table[(Int, String, String, String, String, String, String)](tag, "AUTHORS") {
-    def id = column[Int]("AUTHOR_ID", O.PrimaryKey, O.AutoInc)
-    def firstName = column[String]("NAME_FIRST")
-    def vonName = column[String]("NAME_VON")
-    def lastName = column[String]("NAME_LAST")
-    def jrName = column[String]("NAME_JR")
-    def normalizedLastName = column[String]("NORMALIZED_LAST")
-    def arxivId = column[String]("ARXIV_ID")
-
-    def * = (id, firstName, vonName, lastName, jrName, normalizedLastName, arxivId)
-  }
-  
-  val authorTable = TableQuery[AuthorTable]
-
-  private def makePerson(idVal: Int, nameVal: Name, arxiv: String): IdPerson = {
-    new IdPerson {
-      def id = idVal
-      def name = nameVal
-      def arXivId = if (arxiv == "") None else Some(arxiv)
-    }
-  }
-
-  // Convenience form, for applying straight to the tuple out of the database.
-  private def makePersonLong(id: Int,
-                             first: String, von: String, last: String, jr: String,
-                             norm: String,
-                             arxiv: String): IdPerson = {
-    makePerson(id, Name(first, von, last, jr), arxiv)
-  }
-  private val makePersonT = (makePersonLong _).tupled
 
   class PublicationTable(tag: Tag) extends Table[(Int, String, String, String, Int, Int)](tag, "PUBLICATIONS") {
     def id = column[Int]("PUB_ID", O.PrimaryKey, O.AutoInc)
@@ -102,6 +51,7 @@ class PublicationDatabase(val profile: JdbcProfile, db: Database) {
   
   val authorPubTable = TableQuery[AuthorPubTable]
 
+  // TODO: move this to a new trait
   class VenueTable(tag: Tag) extends Table[(Int, String, String, Int)](tag, "VENUES") {
     def id = column[Int]("VEN_ID", O.PrimaryKey, O.AutoInc)
     def title = column[String]("TITLE")
@@ -111,84 +61,7 @@ class PublicationDatabase(val profile: JdbcProfile, db: Database) {
     def * = (id, title, editors, year)
   }
 
-  def create() {
-    db withSession { implicit session =>
-      (authorTable.ddl ++ publicationTable.ddl ++ authorPubTable.ddl).create
-    }
-  }
-
-  class RedundancyException[T](redundantElements: Iterable[T]) extends Exception
-  class UnknownTypeException(typ: String) extends Exception {
-    override def toString = super.toString + ": " + typ
-  }
-
-  // When querying the tables, we normalize the text (by, e.g., removing accents).
-  private def normalize(s: String): String = {
-    // Replace combined characters by normal characters + combining sequences.
-
-    val s1 = Normalizer.normalize(s, Normalizer.Form.NFKD)
-    println(s1)
-    // Remove the combining sequences.
-    val s2 = s1.replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
-    println(s2)
-    // Replace multiple whitespaces with a single space.
-    val s3 = s2.replaceAll("\\s+", " ")
-    println(s3)
-    s3.trim.toLowerCase
-  }
-
-  /**
-   * Returns all of the authors that have the given last name.
-   */
-  private def getAuthors(s: String): List[IdPerson] = {
-    val tuples = for {
-      a <- authorTable if a.normalizedLastName === normalize(s)
-    } yield a
-    db.withSession { implicit session =>
-      tuples.list() map makePersonT
-    }
-  }
-
-  /**
-   * Returns all of the authors that match the given name.
-   *
-   * They must match the last name exactly, and then match the
-   * rest of the name according to the Name.matches function.
-   */
-  private def getAuthors(n: Name): List[IdPerson] =
-    getAuthors(n.last) filter (_.name matches n)
-
-  /**
-   * Finds all matches for the given author.
-   *
-   * The matches are not in any particular order.
-   */
-  def findAll(p: Person): List[IdPerson] = {
-    val all = getAuthors(p.name)
-    p.arXivId match {
-      case None => all
-      case Some(aId) => all filter (_.arXivId.forall(_ == aId))
-    }
-  }
-
-  /**
-   * Adds an author to the database.
-   *
-   * The author will be assigned a new unique id.
-   */
-  def add(p: Person): Unit = {
-    // TODO: check that the person doesn't already exist.
-    val norm = normalize(p.name.last)
-
-    val cols = authorTable map (c => (c.firstName, c.vonName, c.lastName, c.jrName,
-                                      c.normalizedLastName, c.arxivId))
-
-    db.withSession { implicit session =>
-      cols += ((p.name.first, p.name.von, p.name.last, p.name.jr,
-                norm, p.arXivId.getOrElse("")))
-    }
-  }
-
+  // FIXME: review everything after this
   def publicationByTitle(s: String) = {
     val query = for {
       p <- publicationTable if p.normalizedTitle === normalize(s)

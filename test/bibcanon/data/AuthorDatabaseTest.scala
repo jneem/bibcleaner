@@ -1,5 +1,6 @@
-package bibcanon
+package bibcanon.data
 
+import bibcanon._
 import org.scalatest.FlatSpec
 import org.scalatest.prop.Checkers
 import org.junit.runner.RunWith
@@ -13,15 +14,16 @@ import scala.slick.jdbc.JdbcBackend.Database
 import java.sql.DriverManager
 
 @RunWith(classOf[JUnitRunner])
-class PublicationDatabaseTest extends FlatSpec with Checkers {
-  behavior of "PublicationDatabase"
+class AuthorDatabaseTest extends FlatSpec with Checkers {
+  behavior of "AuthorDatabase"
 
   val DB_URL = "jdbc:h2:mem:test1;DB_CLOSE_DELAY=-1"
   val DB_DRIVER ="org.h2.Driver"
 
+  // I'm not sure why this is needed, but java doesn't find the driver otherwise...
   DriverManager.registerDriver(new org.h2.Driver)
   val connection = Database.forURL(DB_URL, DB_DRIVER)
-  val db = new PublicationDatabase(H2Driver, connection)
+  val db = new DataAccessLayer(H2Driver, connection)
   db.create()
 
   it should "allow insertion of authors" in {

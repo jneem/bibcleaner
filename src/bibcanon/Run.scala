@@ -18,7 +18,7 @@ object Run {
     val filteredEntries = AuxCitationScanner.filter(entries.iterator, io.Source.fromFile(AUX_FILE))
 
     val connection = Database.forURL(DB_URL, DB_DRIVER)
-    val db = new PublicationDatabase(H2Driver, connection)
+    val db = new data.DataAccessLayer(H2Driver, connection)
     val pubs = filteredEntries map (e => (e, db canonicalizeBibtexEntry e))
     pubs.foreach {
       case (e, p) => {

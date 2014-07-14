@@ -56,7 +56,7 @@ trait AuthorDatabase extends Utils { this: Profile =>
 
   val authorCanonTable = TableQuery[AuthorCanonicalizationTable]
 
-  def authorQueryExactName(p: Person) = {
+  private def authorQueryExactName(p: Person) = {
     for {
       a <- authorTable if (a.firstName === p.name.first
                            && a.vonName === p.name.von
@@ -65,19 +65,39 @@ trait AuthorDatabase extends Utils { this: Profile =>
     } yield a
   }
 
-  def authorQueryLastName(p: Person) = {
+  private def authorQueryLastName(lastName: String) = {
     for {
-      a <- authorTable if a.normalizedLastName === normalize(p.name.last)
+      a <- authorTable if a.normalizedLastName === normalize(lastName)
     } yield a
   }
 
-  def authorQueryLastNameCanonicalized(p: Person) = {
-    // TODO: uniqueify the result.
-    for {
-      a <- authorQueryLastName(p)
-      canon <- authorCanonTable if canon.subordinateId === a.id
-      b <- authorTable if canon.canonicalId === b.id
-    } yield b
+  /**
+   * Return the concatenation of
+   * - the canonicalized versions of the given authors, and
+   * - those given authors that do not have a canonicalized version
+   */
+  private def canonicalize(authors: List[IdPerson]): List[IdPerson] = {
+    def canonicalizeOne(id: Int) = {
+      val canon = for {
+        c <- authorCanonTable if c.subordinateId === id
+        a <- authorTable if c.canonicalId === a.id
+      } yield a
+
+      val noCanon =  for {
+        (a, c) <- (authorTable leftJoin authorCanonTable on (_.id === _.subordinateId))
+                   if a.id === id && c.subordinateId.isNull
+      } yield a
+
+      canon ++ noCanon
+    }
+
+    val authorIds = authors map (_.id)
+    val queries = authors map (_.id) map canonicalizeOne
+    val query = queries reduce (_ ++ _)
+
+    db withSession { implicit session =>
+      query.list().distinct map makePersonT
+    }
   }
 
   // TODO: make private
@@ -126,30 +146,45 @@ trait AuthorDatabase extends Utils { this: Profile =>
    * Finds all matches for the given author.
    *
    * The matches are not in any particular order.
+   * We filter out matches that were deemed to be versions of
+   * some canonical entry.
    */
   def findAll(p: Person): List[IdPerson] = {
-    val all = getAuthors(p.name)
+    val all = getAuthors(p.name.last) filter (_.name matches p.name)
+    val canon = canonicalize(all)
     p.arXivId match {
-      case None => all
-      case Some(aId) => all filter (_.arXivId.forall(_ == aId))
+      case None => canon
+      case Some(aId) => canon filter (_.arXivId.forall(_ == aId))
+    }
+  }
+
+  def setCanonical(subordinate: IdPerson, canonical: IdPerson) = {
+    // FIXME: check that `canonical` is not itself subordinate to someone.
+    db withSession { implicit session =>
+      val query = for { c <- authorCanonTable if c.subordinateId === canonical } yield c
+      authorCanonTable += (canonical.id -> subordinate.id)
     }
   }
 
   /**
    * Adds an author to the database.
    *
-   * The author will be assigned a new unique id.
+   * The author will be assigned a new unique id, and the author with her new
+   * id is then returned.
    */
-  def add(p: Person): Unit = {
+  def add(p: Person): IdPerson = {
     // TODO: check that the person doesn't already exist.
     val norm = normalize(p.name.last)
 
     val cols = authorTable map (c => (c.firstName, c.vonName, c.lastName, c.jrName,
                                       c.normalizedLastName, c.arxivId))
+    val idCol = authorTable map (_.id)
 
-    db.withSession { implicit session =>
-      cols += ((p.name.first, p.name.von, p.name.last, p.name.jr,
-                norm, p.arXivId.getOrElse("")))
+    val result = db.withSession { implicit session =>
+      val id = (cols returning idCol) += ((p.name.first, p.name.von, p.name.last, p.name.jr,
+                                           norm, p.arXivId.getOrElse("")))
+      (for { a <- authorTable if a.id === id } yield a).list()
     }
+    makePersonT(result.head)
   }
 }

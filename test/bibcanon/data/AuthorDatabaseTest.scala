@@ -24,15 +24,45 @@ class AuthorDatabaseTest extends FlatSpec with Checkers {
   DriverManager.registerDriver(new org.h2.Driver)
   val connection = Database.forURL(DB_URL, DB_DRIVER)
   val db = new DataAccessLayer(H2Driver, connection)
-  db.create()
+
+  def withCleanDatabase(block: => Unit) = {
+    db.create()
+    block
+    db.drop()
+  }
+
+  def checkNames(query: Name, expected: Set[Name]) = {
+    val results = db.findAll(Person(query)) map (_.name)
+    assert(results.toSet === expected)
+  }
 
   it should "allow insertion of authors" in {
-    val myName = Name("Joe", "Neeman")
-    val me = Person(myName)
-    db.add(me)
+    withCleanDatabase {
+      val myName = Name("Joe", "Neeman")
+      db.add(Person(myName))
 
-    val results = db.findAll(me) map ((x: IdPerson) => x.name)
-    assert(results === List(myName))
+      checkNames(myName, Set(myName))
+    }
+  }
+
+  it should "return only canonical authors" in {
+    withCleanDatabase {
+      val myName = Name("Joe", "Neeman")
+      val myShortName = Name("J", "Neeman")
+      val myTypoName = Name("J", "Meeman")
+      val me = db.add(Person(myName))
+      val meShort = db.add(Person(myShortName))
+      val meTypo = db.add(Person(myTypoName))
+
+      checkNames(myName, Set(myName, myShortName))
+      checkNames(myTypoName, Set(myTypoName))
+
+      db.setCanonical(meTypo, me)
+      db.setCanonical(meShort, me)
+
+      checkNames(myName, Set(myName))
+      checkNames(myTypoName, Set(myName))
+    }
   }
 }
 

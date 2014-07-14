@@ -20,9 +20,17 @@ class DataAccessLayer(override val profile: JdbcProfile, override val db: Databa
 
   import profile.simple._
 
+  private lazy val ddls = authorTable.ddl ++ authorCanonTable.ddl
+
   def create(): Unit = {
     db withSession { implicit session =>
-      (authorTable.ddl).create
+      ddls.create
+    }
+  }
+
+  def drop(): Unit = {
+    db withSession { implicit session =>
+      ddls.drop
     }
   }
 }

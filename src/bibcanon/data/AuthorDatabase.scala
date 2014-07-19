@@ -3,6 +3,7 @@ package bibcanon.data
 import concurrent._
 import bibcanon._
 import ExecutionContext.Implicits.global
+import org.slf4j.LoggerFactory
 import collection.mutable.{ HashMap => MutHashMap, Set => MutSet, MultiMap }
 import java.text.Normalizer
 import bibtex.BibtexEntry
@@ -29,6 +30,8 @@ import scala.slick.jdbc.JdbcBackend.Database
 trait AuthorDatabase extends Utils { this: Profile =>
 
   import profile.simple._
+
+  private def logger = LoggerFactory.getLogger(this.getClass)
 
   class AuthorTable(tag: Tag) extends Table[(Int, String, String, String, String, String, String)](tag, "AUTHORS") {
     def id = column[Int]("AUTHOR_ID", O.PrimaryKey, O.AutoInc)
@@ -159,10 +162,23 @@ trait AuthorDatabase extends Utils { this: Profile =>
   }
 
   def setCanonical(subordinate: IdPerson, canonical: IdPerson) = {
-    // FIXME: check that `canonical` is not itself subordinate to someone.
     db withSession { implicit session =>
-      val query = for { c <- authorCanonTable if c.subordinateId === canonical } yield c
-      authorCanonTable += (canonical.id -> subordinate.id)
+      // Check that `canonical` is not itself subordinate to someone, and that
+      // `subordinate` is not itself the canonical version of someone.
+      val canonicalQuery = for { c <- authorCanonTable if c.subordinateId === canonical.id } yield c
+      val canonicals = canonicalQuery.list()
+      val subordinateQuery = for { c <- authorCanonTable if c.canonicalId === subordinate.id } yield c
+      val subordinates = subordinateQuery.list()
+
+      if (canonicals.isEmpty && subordinates.isEmpty) {
+        authorCanonTable += (canonical.id -> subordinate.id)
+      } else if (!canonicals.isEmpty) {
+        logger.warn(s"Tried to make person ${canonical.id} a canonical version of ${subordinate.id}, " +
+                    s"but ${canonical.id} is already subordinate to ${canonicals}")
+      } else {
+        logger.warn(s"Tried to make person ${canonical.id} a canonical version of ${subordinate.id}, " +
+                    s"but ${subordinate.id} is already a canonical version of ${subordinates}")
+      }
     }
   }
 
@@ -173,7 +189,6 @@ trait AuthorDatabase extends Utils { this: Profile =>
    * id is then returned.
    */
   def add(p: Person): IdPerson = {
-    // TODO: check that the person doesn't already exist.
     val norm = normalize(p.name.last)
 
     val cols = authorTable map (c => (c.firstName, c.vonName, c.lastName, c.jrName,

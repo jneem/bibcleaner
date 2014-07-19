@@ -64,5 +64,22 @@ class AuthorDatabaseTest extends FlatSpec with Checkers {
       checkNames(myTypoName, Set(myName))
     }
   }
+
+  it should "warn about introducing conflicting canonicals" in {
+    withCleanDatabase {
+      val person1 = db.add(Person(Name("Joe", "Neeman1")))
+      val person2 = db.add(Person(Name("Joe", "Neeman2")))
+      val person3 = db.add(Person(Name("Joe", "Neeman3")))
+
+      db.setCanonical(person2, person1)
+      checkNames(person2.name, Set(person1.name))
+
+      db.setCanonical(person3, person2) // should fail
+      checkNames(person3.name, Set(person3.name))
+
+      db.setCanonical(person1, person3) // should fail
+      checkNames(person1.name, Set(person1.name))
+    }
+  }
 }
 

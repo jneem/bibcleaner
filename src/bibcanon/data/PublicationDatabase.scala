@@ -70,7 +70,7 @@ trait PublicationDatabase extends Utils {this: Profile with AuthorDatabase =>
     } yield (p, a)
     db.withSession { implicit session =>
       for {
-        (pubId, pubsAuthors) <- query.list() groupBy (_._1._1)
+        (pubId, pubsAuthors) <- query.list groupBy (_._1._1)
       } yield {
         val (pubs, authors) = pubsAuthors.unzip
         makePublicationT(pubs.head)(authors map makePersonT)

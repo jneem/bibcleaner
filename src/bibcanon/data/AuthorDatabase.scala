@@ -99,7 +99,7 @@ trait AuthorDatabase extends Utils { this: Profile =>
     val query = queries reduce (_ ++ _)
 
     db withSession { implicit session =>
-      query.list().distinct map makePersonT
+      query.list.distinct map makePersonT
     }
   }
 
@@ -131,7 +131,7 @@ trait AuthorDatabase extends Utils { this: Profile =>
       a <- authorTable if a.normalizedLastName === normalize(s)
     } yield a
     db.withSession { implicit session =>
-      tuples.list() map makePersonT
+      tuples.list map makePersonT
     }
   }
 
@@ -166,9 +166,9 @@ trait AuthorDatabase extends Utils { this: Profile =>
       // Check that `canonical` is not itself subordinate to someone, and that
       // `subordinate` is not itself the canonical version of someone.
       val canonicalQuery = for { c <- authorCanonTable if c.subordinateId === canonical.id } yield c
-      val canonicals = canonicalQuery.list()
+      val canonicals = canonicalQuery.list
       val subordinateQuery = for { c <- authorCanonTable if c.canonicalId === subordinate.id } yield c
-      val subordinates = subordinateQuery.list()
+      val subordinates = subordinateQuery.list
 
       if (canonicals.isEmpty && subordinates.isEmpty) {
         authorCanonTable += (canonical.id -> subordinate.id)
@@ -198,7 +198,7 @@ trait AuthorDatabase extends Utils { this: Profile =>
     val result = db.withSession { implicit session =>
       val id = (cols returning idCol) += ((p.name.first, p.name.von, p.name.last, p.name.jr,
                                            norm, p.arXivId.getOrElse("")))
-      (for { a <- authorTable if a.id === id } yield a).list()
+      (for { a <- authorTable if a.id === id } yield a).list
     }
     makePersonT(result.head)
   }

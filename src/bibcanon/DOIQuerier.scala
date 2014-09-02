@@ -2,7 +2,6 @@ package bibcanon
 
 import java.net.URL
 import collection.immutable.PagedSeq
-import util.parsing.input.PagedSeqReader
 import play.api.libs.json._
 import bibtex._
 

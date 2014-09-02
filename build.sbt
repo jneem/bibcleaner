@@ -2,7 +2,7 @@ name := "bibcleaner"
 
 version := "0.1"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.11.2"
 
 scalaSource in Compile := baseDirectory.value / "src"
 
@@ -32,15 +32,15 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "2.1.4" % "test"
 // Parboiled
 
 libraryDependencies ++= Seq(
-  "org.parboiled" % "parboiled-core" % "1.1.5",
-  "org.parboiled" %% "parboiled-scala" % "1.1.5"
+  "org.parboiled" % "parboiled-core" % "1.1.6",
+  "org.parboiled" %% "parboiled-scala" % "1.1.6"
 )
 
 
 // Slick
 
 libraryDependencies ++= Seq(
-  "com.typesafe.slick" %% "slick" % "2.0.2",
+  "com.typesafe.slick" %% "slick" % "2.1.0",
   "com.h2database" % "h2" % "1.4.179",
   "ch.qos.logback" % "logback-classic" % "1.1.2"
   //"org.slf4j" % "slf4j-nop" % "1.6.4"
@@ -51,5 +51,5 @@ libraryDependencies ++= Seq(
 
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-libraryDependencies += "com.typesafe.play" %% "play-json" % "2.2.1"
+libraryDependencies += "com.typesafe.play" %% "play-json" % "2.3.4"
 
